@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="api-base" content="" />
+    <title>OCR Document Reader</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div>
+          <h1>OCR Document Reader</h1>
+          <p>Upload a document image and extract text with EasyOCR.</p>
+        </div>
+        <div class="status" id="status">Ready</div>
+      </header>
+
+      <main class="grid">
+        <section class="card upload">
+          <div class="dropzone" id="dropzone">
+            <input id="fileInput" type="file" accept="image/*" />
+            <div class="drop-content">
+              <p class="title">Drag & drop an image</p>
+              <p class="subtitle">or click to browse</p>
+              <p class="hint">PNG, JPG, JPEG, BMP, TIFF</p>
+            </div>
+          </div>
+          <div class="actions">
+            <button id="runBtn" disabled>Run OCR</button>
+            <button id="clearBtn" class="ghost" disabled>Clear</button>
+          </div>
+          <div class="preview">
+            <div class="preview-label">Preview</div>
+            <img id="previewImage" alt="Preview" />
+          </div>
+        </section>
+
+        <section class="card output">
+          <div class="output-header">
+            <h2>Extracted Text</h2>
+            <div class="meta" id="meta">No data yet</div>
+          </div>
+          <pre id="textOutput" class="text-output"></pre>
+        </section>
+      </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
