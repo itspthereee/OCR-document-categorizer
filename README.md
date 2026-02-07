@@ -73,3 +73,13 @@ Use the “Select Image” button, then “Run OCR”. The app shows the cropped
 
 - Heading detection is heuristic-based (uppercase, trailing colon, or short title case). You can swap in a classifier later.
 - If document detection fails, the original image is used for OCR.
+
+## EasyOCR utility
+
+For a minimal OCR-only call, you can use the lightweight helper:
+
+```
+from ocr_reader import read_text
+
+text_lines = read_text("/path/to/image.jpg")
+```
