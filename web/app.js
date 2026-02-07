@@ -6,7 +6,9 @@ const previewImage = document.getElementById("previewImage");
 const textOutput = document.getElementById("textOutput");
 const metaEl = document.getElementById("meta");
 const statusEl = document.getElementById("status");
-const apiBase = document.querySelector('meta[name="api-base"]')?.content || "";
+const rawApiBase =
+  document.querySelector('meta[name="api-base"]')?.content || "";
+const apiBase = rawApiBase.replace(/\/+$/, "");
 
 let selectedFile = null;
 
