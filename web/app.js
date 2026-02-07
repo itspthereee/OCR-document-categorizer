@@ -8,7 +8,7 @@ const metaEl = document.getElementById("meta");
 const statusEl = document.getElementById("status");
 const rawApiBase =
   document.querySelector('meta[name="api-base"]')?.content || "";
-const apiBase = rawApiBase.replace(/\/+$/, "");
+const apiBase = rawApiBase ? rawApiBase.replace(/\/+$/, "") : "";
 
 let selectedFile = null;
 
