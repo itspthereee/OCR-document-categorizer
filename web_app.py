@@ -17,6 +17,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+genai.configure(api_key="AIzaSyBagWZAixbmkgVvs84Wx_IbPGD1GNJdJmA")
 
 _model: genai.GenerativeModel | None = None
 
