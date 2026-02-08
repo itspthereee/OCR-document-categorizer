@@ -84,7 +84,9 @@ runBtn.addEventListener("click", async () => {
   formData.append("file", selectedFile);
 
   try {
-    const response = await fetch(`${apiBase}/api/ocr`, {
+    const url = `${apiBase}/api/ocr`;
+    console.log("Calling API:", url);
+    const response = await fetch(url, {
       method: "POST",
       body: formData,
     });
@@ -95,8 +97,31 @@ runBtn.addEventListener("click", async () => {
     }
 
     const payload = await response.json();
-    metaEl.textContent = `${payload.lines} lines`;
-    textOutput.textContent = payload.text || "";
+    metaEl.textContent = `${payload.lines} lines detected`;
+    
+    // Display categorized content
+    let output = "=== EXTRACTED & CATEGORIZED TEXT ===\n\n";
+    
+    if (payload.categories) {
+      const { header, items, amounts, footer } = payload.categories;
+      
+      if (header.length > 0) {
+        output += "📋 HEADER INFORMATION\n" + header.join("\n") + "\n\n";
+      }
+      if (items.length > 0) {
+        output += "📦 ITEMS/PRODUCTS\n" + items.join("\n") + "\n\n";
+      }
+      if (amounts.length > 0) {
+        output += "💰 AMOUNTS & TOTALS\n" + amounts.join("\n") + "\n\n";
+      }
+      if (footer.length > 0) {
+        output += "📝 OTHER INFORMATION\n" + footer.join("\n");
+      }
+    } else {
+      output += payload.text || "";
+    }
+    
+    textOutput.textContent = output;
     setStatus("Done");
   } catch (error) {
     setStatus("Error");

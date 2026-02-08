@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from io import BytesIO
 from pathlib import Path
 from typing import Optional
@@ -39,6 +40,40 @@ def _get_reader() -> easyocr.Reader:
     return _reader
 
 
+def _categorize_text(text: str) -> dict:
+    """Categorize extracted text into sections."""
+    lines = text.split("\n")
+    categories = {
+        "header": [],
+        "items": [],
+        "amounts": [],
+        "footer": [],
+    }
+    
+    # Keywords for categorization
+    header_keywords = [r"invoice|receipt|bill|เอกสาร|ใบเสร็จ|ใบแจ้ง|ชื่อ|ที่อยู่|address"]
+    item_keywords = [r"product|item|description|รายการ|สินค้า|ชื่อสินค้า|qty|quantity"]
+    amount_keywords = [r"price|amount|total|subtotal|tax|discount|ราคา|รวม|ส่วนลด|ภาษี|มูลค่า"]
+    
+    for line in lines:
+        line_lower = line.lower()
+        
+        # Check if line contains amount/price/total info
+        if any(re.search(pattern, line_lower) for pattern in amount_keywords):
+            categories["amounts"].append(line.strip())
+        # Check if line contains item info
+        elif any(re.search(pattern, line_lower) for pattern in item_keywords):
+            categories["items"].append(line.strip())
+        # Check if line contains header info
+        elif any(re.search(pattern, line_lower) for pattern in header_keywords):
+            categories["header"].append(line.strip())
+        # Remaining lines go to footer
+        elif line.strip():
+            categories["footer"].append(line.strip())
+    
+    return categories
+
+
 @app.get("/")
 def index() -> FileResponse:
     return FileResponse(WEB_DIR / "index.html")
@@ -70,10 +105,15 @@ def run_ocr(file: UploadFile = File(...)) -> JSONResponse:
         reader = _get_reader()
         results = reader.readtext(image, detail=1)
         lines = [text for _, text, _ in results]
+        full_text = "\n".join(lines)
+        
+        # Categorize the extracted text
+        categories = _categorize_text(full_text)
 
         payload = {
             "lines": len(lines),
-            "text": "\n".join(lines),
+            "text": full_text,
+            "categories": categories,
         }
         return JSONResponse(payload)
     except HTTPException:
