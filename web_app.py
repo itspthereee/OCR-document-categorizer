@@ -18,17 +18,10 @@ WEB_DIR = Path(__file__).parent / "web"
 app = FastAPI(title="OCR Document Reader")
 app.mount("/static", StaticFiles(directory=str(WEB_DIR)), name="static")
 
-allowed_origins = [
-    origin.strip()
-    for origin in os.getenv("ALLOWED_ORIGINS", "*").split(",")
-    if origin.strip()
-]
-allow_credentials = "*" not in allowed_origins
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=allow_credentials,
+    allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
