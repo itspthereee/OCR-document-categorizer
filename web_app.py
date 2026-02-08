@@ -6,6 +6,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Optional
 
+import cv2
 import easyocr
 import numpy as np
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -74,6 +75,61 @@ def _categorize_text(text: str) -> dict:
     return categories
 
 
+def _order_points(points: np.ndarray) -> np.ndarray:
+    rect = np.zeros((4, 2), dtype="float32")
+    s = points.sum(axis=1)
+    rect[0] = points[np.argmin(s)]
+    rect[2] = points[np.argmax(s)]
+
+    diff = np.diff(points, axis=1)
+    rect[1] = points[np.argmin(diff)]
+    rect[3] = points[np.argmax(diff)]
+    return rect
+
+
+def _four_point_transform(image: np.ndarray, points: np.ndarray) -> np.ndarray:
+    rect = _order_points(points)
+    (top_left, top_right, bottom_right, bottom_left) = rect
+
+    width_a = np.linalg.norm(bottom_right - bottom_left)
+    width_b = np.linalg.norm(top_right - top_left)
+    max_width = int(max(width_a, width_b))
+
+    height_a = np.linalg.norm(top_right - bottom_right)
+    height_b = np.linalg.norm(top_left - bottom_left)
+    max_height = int(max(height_a, height_b))
+
+    dst = np.array(
+        [
+            [0, 0],
+            [max_width - 1, 0],
+            [max_width - 1, max_height - 1],
+            [0, max_height - 1],
+        ],
+        dtype="float32",
+    )
+
+    matrix = cv2.getPerspectiveTransform(rect, dst)
+    return cv2.warpPerspective(image, matrix, (max_width, max_height))
+
+
+def _try_crop_document(image: np.ndarray) -> np.ndarray:
+    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    edged = cv2.Canny(blurred, 75, 200)
+
+    contours, _ = cv2.findContours(edged.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    contours = sorted(contours, key=cv2.contourArea, reverse=True)[:5]
+
+    for contour in contours:
+        peri = cv2.arcLength(contour, True)
+        approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
+        if len(approx) == 4:
+            return _four_point_transform(image, approx.reshape(4, 2).astype("float32"))
+
+    return image
+
+
 @app.get("/")
 def index() -> FileResponse:
     return FileResponse(WEB_DIR / "index.html")
@@ -102,8 +158,10 @@ def run_ocr(file: UploadFile = File(...)) -> JSONResponse:
         pil_image = Image.open(BytesIO(image_bytes)).convert("RGB")
         image = np.array(pil_image)
 
+        cropped_image = _try_crop_document(image)
+
         reader = _get_reader()
-        results = reader.readtext(image, detail=1)
+        results = reader.readtext(cropped_image, detail=1)
         lines = [text for _, text, _ in results]
         full_text = "\n".join(lines)
         
