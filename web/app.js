@@ -6,7 +6,9 @@ const previewImage = document.getElementById("previewImage");
 const textOutput = document.getElementById("textOutput");
 const metaEl = document.getElementById("meta");
 const statusEl = document.getElementById("status");
-const apiBase = 'https://okay-elwira-itspthereee-d134103d.koyeb.app';
+const apiBase =
+  document.querySelector('meta[name="api-base"]')?.content?.trim() ||
+  window.location.origin;
 let selectedFile = null;
 
 const setStatus = (text) => {

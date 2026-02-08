@@ -19,7 +19,6 @@ app.add_middleware(
 )
 
 _model: genai.GenerativeModel | None = None
-model = genai.GenerativeModel('gemini-1.5-flash')
 
 def _get_model() -> genai.GenerativeModel:
     global _model
@@ -28,7 +27,8 @@ def _get_model() -> genai.GenerativeModel:
         if not api_key:
             raise RuntimeError("GEMINI_API_KEY is not set")
         genai.configure(api_key=api_key)
-        _model = genai.GenerativeModel("models/gemini-1.5-flash")
+        # Use the model name expected by the GenAI client (no models/ prefix).
+        _model = genai.GenerativeModel("gemini-1.5-flash")
     return _model
 
 
@@ -45,7 +45,9 @@ async def ocr_endpoint(file: UploadFile = File(...)) -> dict:
         image = Image.open(io.BytesIO(image_data))
         prompt = "อ่านข้อความในรูปนี้และสรุปแยกหมวดหมู่เอกสารให้หน่อย (Output as text)"
         response = _get_model().generate_content([prompt, image])
-        return {"text": response.text}
+        text = response.text or ""
+        lines = [line for line in text.splitlines() if line.strip()]
+        return {"text": text, "lines": len(lines)}
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001
