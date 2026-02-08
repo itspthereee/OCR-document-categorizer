@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import io
 import os
+import re
 
 import google.generativeai as genai
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from PIL import Image
+
+from ocr_reader import crop_document_from_image
 
 app = FastAPI(title="OCR Document Reader")
 
@@ -149,10 +152,26 @@ async def ocr_endpoint(file: UploadFile = File(...)) -> dict:
             raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
         image = Image.open(io.BytesIO(image_data))
-        prompt = "อ่านข้อความในรูปนี้และสรุปแยกหมวดหมู่เอกสารให้หน่อย (Output as text)"
+        
+        # Crop document from wide-angle photo
+        cropped_image = crop_document_from_image(image)
+        
+        # Enhanced prompt for structured categorization
+        prompt = """อ่านข้อความในรูปนี้และจัดหมวดหมู่เอกสาร กรุณาให้ผลลัพธ์ในรูปแบบ:
+
+## หมวดหมู่หลัก: [ชื่อหมวดหมู่]
+
+### หัวข้อที่ 1: [ชื่อหัวข้อ]
+- [รายละเอียดสำคัญ]
+
+### หัวข้อที่ 2: [ชื่อหัวข้อ]
+- [รายละเอียดสำคัญ]
+
+จัดแยกข้อความตามบริบทและความหมาย แล้วจัดกลุ่มเป็นหมวดหมู่ที่เหมาะสม"""
+        
         try:
             model = _get_model()
-            response = model.generate_content([prompt, image])
+            response = model.generate_content([prompt, cropped_image])
         except Exception as exc:  # noqa: BLE001
             # Provide a clearer error for missing/unsupported model names.
             detail = str(exc)
@@ -167,13 +186,52 @@ async def ocr_endpoint(file: UploadFile = File(...)) -> dict:
                     ),
                 ) from exc
             raise HTTPException(status_code=500, detail=f"Gemini API error: {detail}") from exc
+        
         text = response.text or ""
         lines = [line for line in text.splitlines() if line.strip()]
-        return {"text": text, "lines": len(lines)}
+        
+        # Extract categories from the structured response
+        categories = _extract_categories(text)
+        
+        return {
+            "text": text,
+            "lines": len(lines),
+            "categories": categories,
+            "document_cropped": cropped_image.size != image.size
+        }
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+def _extract_categories(text: str) -> dict:
+    """Extract structured categories from the Gemini response.
+    
+    Args:
+        text: The response text from Gemini containing category headings
+        
+    Returns:
+        Dictionary with main_category and topics list
+    """
+    result = {
+        "main_category": None,
+        "topics": []
+    }
+    
+    # Extract main category (## หมวดหมู่หลัก:)
+    main_match = re.search(r'##\s*หมวดหมู่หลัก[:\s]+(.+?)(?=\n|$)', text)
+    if main_match:
+        result["main_category"] = main_match.group(1).strip()
+    
+    # Extract topics (### หัวข้อที่ or any ### heading)
+    topic_pattern = r'###\s*(.+?)(?=\n|$)'
+    topics = re.findall(topic_pattern, text)
+    
+    if topics:
+        result["topics"] = [topic.strip() for topic in topics]
+    
+    return result
 
 
 if __name__ == "__main__":

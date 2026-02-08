@@ -1,6 +1,12 @@
 # Set environment variables
-$env:GEMINI_API_KEY = "AIzaSyBagWZAixbmkgVvs84Wx_IbPGD1GNJdJmA"
+# IMPORTANT: Set GEMINI_API_KEY in your shell before running this script.
 $env:PORT = "8000"
+
+if (-not $env:GEMINI_API_KEY) {
+	Write-Host "❌ GEMINI_API_KEY is not set."
+	Write-Host "   PowerShell: $env:GEMINI_API_KEY = \"your-key\""
+	exit 1
+}
 
 # Run the server
 Write-Host "🚀 Starting OCR Document Reader..."

@@ -4,11 +4,11 @@ Simple OCR web app using Google Gemini AI with a drag-and-drop frontend.
 
 ## Features
 
-- 📄 Extract and categorize text from images
-- 🤖 Powered by Google Gemini AI (gemini-1.5-flash)
-- 🎯 Automatic model selection with fallback
-- 🌐 Built-in web interface
-- ✅ Health check endpoint
+-  Extract and categorize text from images
+-  Powered by Google Gemini AI (gemini-1.5-flash)
+-  Automatic model selection with fallback
+-  Built-in web interface
+-  Health check endpoint
 
 ## Quick Start
 
