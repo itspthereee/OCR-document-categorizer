@@ -11,6 +11,8 @@ const apiBase =
   window.location.origin;
 let selectedFile = null;
 
+console.log('🔧 API Base URL:', apiBase);
+
 const setStatus = (text) => {
   statusEl.textContent = text;
 };
