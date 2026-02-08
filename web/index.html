@@ -31,6 +31,15 @@
               <p class="hint">PNG, JPG, JPEG, BMP, TIFF</p>
             </div>
           </div>
+          <div class="field">
+            <label for="languageSelect">OCR language</label>
+            <select id="languageSelect">
+              <option value="en" selected>English</option>
+              <option value="th,en">Thai + English</option>
+              <option value="th">Thai</option>
+            </select>
+            <p class="field-hint">Use comma-separated language codes if needed.</p>
+          </div>
           <div class="actions">
             <button id="runBtn" disabled>Run OCR</button>
             <button id="clearBtn" class="ghost" disabled>Clear</button>
