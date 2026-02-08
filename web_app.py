@@ -19,7 +19,7 @@ app.add_middleware(
 )
 
 _model: genai.GenerativeModel | None = None
-
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 def _get_model() -> genai.GenerativeModel:
     global _model
