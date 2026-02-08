@@ -6,10 +6,7 @@ const previewImage = document.getElementById("previewImage");
 const textOutput = document.getElementById("textOutput");
 const metaEl = document.getElementById("meta");
 const statusEl = document.getElementById("status");
-const rawApiBase =
-  document.querySelector('meta[name="api-base"]')?.content || "";
-const apiBase = rawApiBase ? rawApiBase.replace(/\/+$/, "") : "";
-
+const apiBase = 'https://okay-elwira-itspthereee-d134103d.koyeb.app';
 let selectedFile = null;
 
 const setStatus = (text) => {
