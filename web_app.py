@@ -36,7 +36,7 @@ _reader: Optional[easyocr.Reader] = None
 def _get_reader() -> easyocr.Reader:
     global _reader
     if _reader is None:
-        _reader = easyocr.Reader(["th", "en"], gpu=False)
+        _reader = easyocr.Reader(["th", "en"], gpu=False, model_storage_dir='/tmp')
     return _reader
 
 
