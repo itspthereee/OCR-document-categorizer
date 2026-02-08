@@ -19,16 +19,27 @@ app.add_middleware(
 )
 
 _model: genai.GenerativeModel | None = None
+_model_name: str | None = None
+
+def _select_model_name() -> str:
+    # Allow override from environment; try a few known model names as fallback.
+    env_model = os.environ.get("GEMINI_MODEL")
+    if env_model:
+        return env_model
+    # Order matters: newest/most available first.
+    return "gemini-1.5-flash-latest"
+
 
 def _get_model() -> genai.GenerativeModel:
-    global _model
+    global _model, _model_name
     if _model is None:
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             raise RuntimeError("GEMINI_API_KEY is not set")
         genai.configure(api_key=api_key)
         # Use the model name expected by the GenAI client (no models/ prefix).
-        _model = genai.GenerativeModel("gemini-1.5-flash")
+        _model_name = _select_model_name()
+        _model = genai.GenerativeModel(_model_name)
     return _model
 
 
@@ -44,7 +55,21 @@ async def ocr_endpoint(file: UploadFile = File(...)) -> dict:
 
         image = Image.open(io.BytesIO(image_data))
         prompt = "อ่านข้อความในรูปนี้และสรุปแยกหมวดหมู่เอกสารให้หน่อย (Output as text)"
-        response = _get_model().generate_content([prompt, image])
+        try:
+            response = _get_model().generate_content([prompt, image])
+        except Exception as exc:  # noqa: BLE001
+            # Provide a clearer error for missing/unsupported model names.
+            detail = str(exc)
+            if "not found" in detail or "ListModels" in detail:
+                raise HTTPException(
+                    status_code=500,
+                    detail=(
+                        "Model not available for this API key. "
+                        "Set GEMINI_MODEL to a valid model name for your account. "
+                        f"Current model: {_model_name}"
+                    ),
+                ) from exc
+            raise
         text = response.text or ""
         lines = [line for line in text.splitlines() if line.strip()]
         return {"text": text, "lines": len(lines)}
