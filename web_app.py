@@ -18,12 +18,15 @@ WEB_DIR = Path(__file__).parent / "web"
 app = FastAPI(title="OCR Document Reader")
 app.mount("/static", StaticFiles(directory=str(WEB_DIR)), name="static")
 
+# CORS Configuration - Allow all origins for API access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=["*"],  # อนุญาตทุก origin
+    allow_credentials=False,  # ต้องเป็น False เมื่อใช้ allow_origins=["*"]
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,  # Cache preflight request เป็นเวลา 1 ชั่วโมง
 )
 
 _reader: Optional[easyocr.Reader] = None
@@ -39,6 +42,16 @@ def _get_reader() -> easyocr.Reader:
 @app.get("/")
 def index() -> FileResponse:
     return FileResponse(WEB_DIR / "index.html")
+@app.get("/styles.css")
+def styles() -> FileResponse:
+    return FileResponse(WEB_DIR / "styles.css", media_type="text/css")
+
+
+@app.get("/app.js")
+def app_js() -> FileResponse:
+    return FileResponse(WEB_DIR / "app.js", media_type="application/javascript")
+
+
 
 
 @app.post("/api/ocr")
