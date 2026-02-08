@@ -36,7 +36,18 @@ _reader: Optional[easyocr.Reader] = None
 def _get_reader() -> easyocr.Reader:
     global _reader
     if _reader is None:
-        _reader = easyocr.Reader(["th", "en"], gpu=False, model_storage_dir='/tmp')
+        # Ensure model directory exists and is writable
+        model_dir = os.environ.get('EASYOCR_MODEL_DIR', '/tmp')
+        os.makedirs(model_dir, exist_ok=True)
+        print(f"Initializing EasyOCR with model_storage_dir={model_dir}")
+        _reader = easyocr.Reader(
+            ["th", "en"], 
+            gpu=False, 
+            model_storage_dir=model_dir,
+            download_enabled=True,
+            verbose=True
+        )
+        print("EasyOCR initialized successfully")
     return _reader
 
 
