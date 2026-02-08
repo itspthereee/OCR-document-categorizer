@@ -23,6 +23,12 @@ Create a new Web Service and use:
 
 The service serves the frontend from `/` and the OCR API at `/api/ocr`.
 
+### OCR languages
+
+The UI includes a language selector. The backend also accepts an optional
+`languages` form field with comma-separated EasyOCR language codes, for example
+`en` or `th,en`.
+
 ### CORS for Vercel
 
 Set `ALLOWED_ORIGINS` on Render to your Vercel domain, for example:

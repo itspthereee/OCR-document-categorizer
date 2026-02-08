@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import io
 import os
+import tempfile
 
-import google.generativeai as genai
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
+
+from ocr_reader import read_text
 
 app = FastAPI(title="OCR Document Reader")
 
@@ -17,23 +19,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-_model: genai.GenerativeModel | None = None
-model = genai.GenerativeModel('gemini-1.5-flash')
-
-def _get_model() -> genai.GenerativeModel:
-    global _model
-    if _model is None:
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key:
-            raise RuntimeError("GEMINI_API_KEY is not set")
-        genai.configure(api_key=api_key)
-        _model = genai.GenerativeModel("models/gemini-1.5-flash")
-    return _model
-
-
 @app.post("/api/ocr")
-async def ocr_endpoint(file: UploadFile = File(...)) -> dict:
+async def ocr_endpoint(
+    file: UploadFile = File(...),
+    languages: str | None = Form(None),
+) -> dict:
     if file.content_type is None or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Please upload an image file.")
 
@@ -43,9 +33,25 @@ async def ocr_endpoint(file: UploadFile = File(...)) -> dict:
             raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
         image = Image.open(io.BytesIO(image_data))
-        prompt = "อ่านข้อความในรูปนี้และสรุปแยกหมวดหมู่เอกสารให้หน่อย (Output as text)"
-        response = _get_model().generate_content([prompt, image])
-        return {"text": response.text}
+        image.load()
+
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+            temp_path = tmp.name
+            image.save(tmp, format="PNG")
+
+        lang_list = None
+        if languages:
+            lang_list = [lang.strip() for lang in languages.split(",") if lang.strip()]
+
+        try:
+            lines = read_text(temp_path, languages=lang_list)
+        finally:
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
+
+        return {"text": "\n".join(lines), "lines": len(lines)}
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001
