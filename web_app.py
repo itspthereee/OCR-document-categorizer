@@ -28,7 +28,7 @@ def _get_model() -> genai.GenerativeModel:
         if not api_key:
             raise RuntimeError("GEMINI_API_KEY is not set")
         genai.configure(api_key=api_key)
-        _model = genai.GenerativeModel("gemini-1.5-flash")
+        _model = genai.GenerativeModel("models/gemini-1.5-flash")
     return _model
 
 
