@@ -17,7 +17,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-genai.configure(api_key="AIzaSyBagWZAixbmkgVvs84Wx_IbPGD1GNJdJmA")
 
 _model: genai.GenerativeModel | None = None
 
@@ -29,7 +28,7 @@ def _get_model() -> genai.GenerativeModel:
         if not api_key:
             raise RuntimeError("GEMINI_API_KEY is not set")
         genai.configure(api_key=api_key)
-        _model = genai.GenerativeModel("gemini-1.5-flash")
+        _model = genai.GenerativeModel("gemini-1.5-flash-latest")
     return _model
 
 
