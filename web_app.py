@@ -42,6 +42,16 @@ def _get_reader() -> easyocr.Reader:
 @app.get("/")
 def index() -> FileResponse:
     return FileResponse(WEB_DIR / "index.html")
+@app.get("/styles.css")
+def styles() -> FileResponse:
+    return FileResponse(WEB_DIR / "styles.css", media_type="text/css")
+
+
+@app.get("/app.js")
+def app_js() -> FileResponse:
+    return FileResponse(WEB_DIR / "app.js", media_type="application/javascript")
+
+
 
 
 @app.post("/api/ocr")
