@@ -18,14 +18,15 @@ WEB_DIR = Path(__file__).parent / "web"
 app = FastAPI(title="OCR Document Reader")
 app.mount("/static", StaticFiles(directory=str(WEB_DIR)), name="static")
 
-# CORS Configuration
+# CORS Configuration - Allow all origins for API access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_origins=["*"],  # อนุญาตทุก origin
+    allow_credentials=False,  # ต้องเป็น False เมื่อใช้ allow_origins=["*"]
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],
+    max_age=3600,  # Cache preflight request เป็นเวลา 1 ชั่วโมง
 )
 
 _reader: Optional[easyocr.Reader] = None
