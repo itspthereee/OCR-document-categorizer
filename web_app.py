@@ -49,6 +49,9 @@ async def ocr_endpoint(
         lang_list = None
         if languages:
             lang_list = [lang.strip() for lang in languages.split(",") if lang.strip()]
+        
+        if not lang_list:
+            lang_list = ["th", "en"]
 
         try:
             lines = read_text(temp_path, languages=lang_list)
