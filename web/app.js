@@ -83,6 +83,7 @@ runBtn.addEventListener("click", async () => {
 
   const formData = new FormData();
   formData.append("file", selectedFile);
+  formData.append("languages", languageSelect.value);
 
   try {
     const url = `${apiBase}/api/ocr`;
