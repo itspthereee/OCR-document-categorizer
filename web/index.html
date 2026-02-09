@@ -34,9 +34,9 @@
           <div class="field">
             <label for="languageSelect">OCR language</label>
             <select id="languageSelect">
-              <option value="th,en" selected>Thai + English</option>
-              <option value="th">Thai only</option>
-              <option value="en">English only</option>
+              <option value="en" selected>English</option>
+              <option value="th,en">Thai + English</option>
+              <option value="th">Thai</option>
             </select>
             <p class="field-hint">Use comma-separated language codes if needed.</p>
           </div>
@@ -47,9 +47,6 @@
           <div class="preview">
             <div class="preview-label">Preview</div>
             <img id="previewImage" alt="Preview" />
-            <canvas id="cropCanvas" style="display:none; max-width:100%; border:2px dashed #4f46e5; cursor:crosshair;"></canvas>
-            <button id="cropBtn" class="ghost" style="display:none; margin-top:8px;">Crop Image</button>
-            <button id="resetCropBtn" class="ghost" style="display:none; margin-top:8px;">Reset Crop</button>
           </div>
         </section>
 
