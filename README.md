@@ -23,6 +23,16 @@ Create a new Web Service and use:
 
 The service serves the frontend from `/` and the OCR API at `/api/ocr`.
 
+## Koyeb deployment
+
+Koyeb sometimes fails to detect Python buildpacks, so this repo includes a
+Dockerfile. Configure the service to build from Dockerfile:
+
+- Build: Dockerfile
+- Start command: use the Dockerfile default
+
+The app listens on `$PORT` (defaults to 8000).
+
 ### OCR languages
 
 The UI includes a language selector. The backend also accepts an optional
