@@ -1,6 +1,5 @@
 const dropzone = document.getElementById("dropzone");
 const fileInput = document.getElementById("fileInput");
-const languageSelect = document.getElementById("languageSelect");
 const runBtn = document.getElementById("runBtn");
 const clearBtn = document.getElementById("clearBtn");
 const previewImage = document.getElementById("previewImage");
@@ -8,11 +7,11 @@ const textOutput = document.getElementById("textOutput");
 const metaEl = document.getElementById("meta");
 const statusEl = document.getElementById("status");
 const apiBase =
-  document.querySelector('meta[name="api-base"]')?.content?.trim() ||
+ 'https://yabbering-marcela-itspthereee-1e454e88.koyeb.app';
   window.location.origin;
 let selectedFile = null;
 
-console.log('🔧 API Base URL:', apiBase);
+console.log('API Base URL:', apiBase);
 
 const setStatus = (text) => {
   statusEl.textContent = text;
@@ -84,7 +83,6 @@ runBtn.addEventListener("click", async () => {
 
   const formData = new FormData();
   formData.append("file", selectedFile);
-  formData.append("languages", languageSelect.value);
 
   try {
     const url = `${apiBase}/api/ocr`;
