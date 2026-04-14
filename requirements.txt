@@ -1,8 +1,5 @@
-opencv-python>=4.8.0
-numpy>=1.24.0
-pillow>=10.0.0
-tqdm>=4.66.0
-reportlab>=4.0.0
-# optional: drag-and-drop support
-# tkinterdnd2>=0.4.2
-# easyocr is installed by you separately
+fastapi
+uvicorn
+python-multipart
+Pillow
+google-generativeai
