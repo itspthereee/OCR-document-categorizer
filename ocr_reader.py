@@ -53,7 +53,7 @@ def read_and_categorize(image_path: str, languages: list | None = None) -> dict:
     )
 
     response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-1.5-flash",
         contents=[
             types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
             types.Part.from_text(text=prompt),
