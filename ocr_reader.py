@@ -1,38 +1,25 @@
-"""Google Gemini Flash OCR utilities (google-genai SDK)."""
+"""Google Gemini Flash OCR — direct REST API (no SDK)."""
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 
+import requests
 
-def _encode_image(image_path: str) -> bytes:
-    """Read image file as raw bytes."""
+
+def _encode_image(image_path: str) -> str:
     with open(image_path, "rb") as f:
-        return f.read()
-
-
-def _get_client():
-    from google import genai
-
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        raise ValueError("GEMINI_API_KEY environment variable is not set.")
-    return genai.Client(api_key=api_key)
+        return base64.b64encode(f.read()).decode("utf-8")
 
 
 def read_and_categorize(image_path: str, languages: list | None = None) -> dict:
-    """Read and categorize text from a document image using Gemini Flash.
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY environment variable is not set.")
 
-    Returns a dict with keys:
-      - text: full extracted text (str)
-      - lines: line count (int)
-      - categories: dict with header/items/amounts/footer lists
-    """
-    from google.genai import types
-
-    client = _get_client()
-    image_bytes = _encode_image(image_path)
+    image_data = _encode_image(image_path)
 
     lang_hint = ""
     if languages:
@@ -52,15 +39,33 @@ def read_and_categorize(image_path: str, languages: list | None = None) -> dict:
         "Each category is a list of strings (one entry per line/item)."
     )
 
-    response = client.models.generate_content(
-        model="gemini-1.5-flash",
-        contents=[
-            types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
-            prompt,
-        ],
+    url = (
+        "https://generativelanguage.googleapis.com/v1/models/"
+        f"gemini-1.5-flash:generateContent?key={api_key}"
     )
 
-    content = (response.text or "").strip()
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"inline_data": {"mime_type": "image/png", "data": image_data}},
+                    {"text": prompt},
+                ]
+            }
+        ]
+    }
+
+    resp = requests.post(url, json=payload, timeout=60)
+    resp.raise_for_status()
+
+    content = (
+        resp.json()
+        .get("candidates", [{}])[0]
+        .get("content", {})
+        .get("parts", [{}])[0]
+        .get("text", "")
+        .strip()
+    )
 
     # Strip markdown code fences if the model wraps the response
     if content.startswith("```"):
