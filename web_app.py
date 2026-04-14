@@ -65,7 +65,11 @@ async def ocr_endpoint(
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        msg = str(exc)
+        api_key = os.environ.get("GEMINI_API_KEY", "")
+        if api_key:
+            msg = msg.replace(api_key, "***")
+        raise HTTPException(status_code=500, detail=msg) from exc
 
 
 if __name__ == "__main__":
