@@ -1,3 +1,4 @@
+const langSelect = document.getElementById("langSelect");
 const dropzone = document.getElementById("dropzone");
 const fileInput = document.getElementById("fileInput");
 const runBtn = document.getElementById("runBtn");
@@ -82,6 +83,7 @@ runBtn.addEventListener("click", async () => {
 
   const formData = new FormData();
   formData.append("file", selectedFile);
+  formData.append("languages", langSelect.value);
 
   try {
     const url = `${apiBase}/api/ocr`;

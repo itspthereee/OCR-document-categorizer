@@ -1,26 +1,24 @@
-"""Google Gemini Flash OCR utilities."""
+"""Google Gemini Flash OCR utilities (google-genai SDK)."""
 
 from __future__ import annotations
 
-import base64
 import json
 import os
 
 
-def _encode_image(image_path: str) -> str:
-    """Encode image file to base64 string."""
+def _encode_image(image_path: str) -> bytes:
+    """Read image file as raw bytes."""
     with open(image_path, "rb") as f:
-        return base64.b64encode(f.read()).decode("utf-8")
+        return f.read()
 
 
 def _get_client():
-    import google.generativeai as genai
+    from google import genai
 
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise ValueError("GEMINI_API_KEY environment variable is not set.")
-    genai.configure(api_key=api_key)
-    return genai.GenerativeModel("gemini-1.5-flash")
+    return genai.Client(api_key=api_key)
 
 
 def read_and_categorize(image_path: str, languages: list | None = None) -> dict:
@@ -31,8 +29,10 @@ def read_and_categorize(image_path: str, languages: list | None = None) -> dict:
       - lines: line count (int)
       - categories: dict with header/items/amounts/footer lists
     """
-    model = _get_client()
-    image_data = _encode_image(image_path)
+    from google.genai import types
+
+    client = _get_client()
+    image_bytes = _encode_image(image_path)
 
     lang_hint = ""
     if languages:
@@ -52,12 +52,14 @@ def read_and_categorize(image_path: str, languages: list | None = None) -> dict:
         "Each category is a list of strings (one entry per line/item)."
     )
 
-    image_part = {
-        "mime_type": "image/png",
-        "data": image_data,
-    }
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=[
+            types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
+            types.Part.from_text(text=prompt),
+        ],
+    )
 
-    response = model.generate_content([image_part, prompt])
     content = (response.text or "").strip()
 
     # Strip markdown code fences if the model wraps the response
@@ -85,6 +87,5 @@ def read_and_categorize(image_path: str, languages: list | None = None) -> dict:
             },
         }
     except (json.JSONDecodeError, AttributeError):
-        # Fallback: plain text, no categories
         lines = [l for l in content.splitlines() if l.strip()]
         return {"text": content, "lines": len(lines)}
