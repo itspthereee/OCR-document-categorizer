@@ -1,25 +1,90 @@
-"""EasyOCR wrapper utilities."""
+"""Google Gemini Flash OCR utilities."""
 
 from __future__ import annotations
 
-from typing import Iterable, List
+import base64
+import json
+import os
 
-import easyocr
+
+def _encode_image(image_path: str) -> str:
+    """Encode image file to base64 string."""
+    with open(image_path, "rb") as f:
+        return base64.b64encode(f.read()).decode("utf-8")
 
 
-def create_reader(languages: Iterable[str] | None = None, *, gpu: bool = False) -> easyocr.Reader:
-    """Create an EasyOCR Reader.
+def _get_client():
+    import google.generativeai as genai
 
-    Args:
-        languages: Iterable of language codes like ["en"]. Defaults to ["en"].
-        gpu: Whether to use GPU acceleration.
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY environment variable is not set.")
+    genai.configure(api_key=api_key)
+    return genai.GenerativeModel("gemini-2.0-flash")
+
+
+def read_and_categorize(image_path: str, languages: list | None = None) -> dict:
+    """Read and categorize text from a document image using Gemini Flash.
+
+    Returns a dict with keys:
+      - text: full extracted text (str)
+      - lines: line count (int)
+      - categories: dict with header/items/amounts/footer lists
     """
-    lang_list = list(languages) if languages else ["en"]
-    return easyocr.Reader(lang_list, gpu=gpu)
+    model = _get_client()
+    image_data = _encode_image(image_path)
 
+    lang_hint = ""
+    if languages:
+        lang_hint = f" The document may contain text in: {', '.join(languages)}."
 
-def read_text(image_path: str, languages: Iterable[str] | None = None, *, gpu: bool = False) -> List[str]:
-    """Read text from an image and return the detected strings."""
-    reader = create_reader(languages, gpu=gpu)
-    results = reader.readtext(image_path, detail=0)
-    return list(results)
+    prompt = (
+        f"Analyze this document image.{lang_hint} "
+        "Extract ALL text from the document, then categorize it into sections.\n"
+        "Return ONLY a JSON object with this exact structure (no markdown, no explanation):\n"
+        '{"text": "<full extracted text>", "categories": '
+        '{"header": [], "items": [], "amounts": [], "footer": []}}\n\n'
+        "Guidelines:\n"
+        "- header: title, company/organization name, document type, date, reference numbers\n"
+        "- items: products, services, line items, descriptions, quantities\n"
+        "- amounts: prices, totals, subtotals, taxes, discounts\n"
+        "- footer: notes, terms & conditions, contact info, signatures, stamps\n"
+        "Each category is a list of strings (one entry per line/item)."
+    )
+
+    image_part = {
+        "mime_type": "image/png",
+        "data": image_data,
+    }
+
+    response = model.generate_content([image_part, prompt])
+    content = (response.text or "").strip()
+
+    # Strip markdown code fences if the model wraps the response
+    if content.startswith("```"):
+        parts = content.split("```")
+        for part in parts:
+            stripped = part.lstrip("json").strip()
+            if stripped.startswith("{"):
+                content = stripped
+                break
+
+    try:
+        result = json.loads(content)
+        text = result.get("text", "")
+        categories = result.get("categories", {})
+        lines = [l for l in text.splitlines() if l.strip()]
+        return {
+            "text": text,
+            "lines": len(lines),
+            "categories": {
+                "header": categories.get("header", []),
+                "items": categories.get("items", []),
+                "amounts": categories.get("amounts", []),
+                "footer": categories.get("footer", []),
+            },
+        }
+    except (json.JSONDecodeError, AttributeError):
+        # Fallback: plain text, no categories
+        lines = [l for l in content.splitlines() if l.strip()]
+        return {"text": content, "lines": len(lines)}

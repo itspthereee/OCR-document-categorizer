@@ -8,7 +8,7 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 
-from ocr_reader import read_text
+from ocr_reader import read_and_categorize
 
 app = FastAPI(title="OCR Document Reader")
 
@@ -49,19 +49,19 @@ async def ocr_endpoint(
         lang_list = None
         if languages:
             lang_list = [lang.strip() for lang in languages.split(",") if lang.strip()]
-        
+
         if not lang_list:
             lang_list = ["th", "en"]
 
         try:
-            lines = read_text(temp_path, languages=lang_list)
+            result = read_and_categorize(temp_path, languages=lang_list)
         finally:
             try:
                 os.remove(temp_path)
             except OSError:
                 pass
 
-        return {"text": "\n".join(lines), "lines": len(lines)}
+        return result
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001
