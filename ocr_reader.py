@@ -41,7 +41,7 @@ def read_and_categorize(image_path: str, languages: list | None = None) -> dict:
 
     url = (
         "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"gemini-2.0-flash:generateContent?key={api_key}"
+        f"gemini-2.5-flash:generateContent?key={api_key}"
     )
 
     payload = {
